@@ -1,0 +1,3 @@
+MNV_ENCODE = '0'
+
+PASSWORD_ENCODE_KEY = '22cCucvYyAvD0nNXB0BOVq1-spxkt9a1fEetxPH0ugA='
