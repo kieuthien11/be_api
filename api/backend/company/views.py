@@ -5,6 +5,7 @@ from api.base.baseViews import BaseAPIView
 
 from core.company.models import Company
 from library.constant.api import SERVICE_CODE_NOT_EXISTS_BODY, SERVICE_CODE_BODY_PARSE_ERROR
+from library.functions import convert_to_int
 
 
 class CompanyViewSet(BaseAPIView):
@@ -72,4 +73,50 @@ class CompanyViewSet(BaseAPIView):
             transaction.savepoint_rollback(tra)
             return self.response_exception(code="COMPANY_NOT_EXIST")
 
+    def detail_company(self, request, *args, **kwargs):
 
+        company_id = self.request.query_params.get('company_id', None)
+        if not company_id:
+            return self.validate_exception('Missing company_id')
+
+        company_id = convert_to_int(company_id)
+        if not company_id:
+            return self.validate_exception('Can not convert company_id to int')
+
+        company = Company.objects.filter(id=company_id)
+        if not company:
+            return self.response_exception('Company Query does not exist')
+
+        company = company.annotate(
+            company_id=F('id'),
+            company_name=F('name'),
+            company_description=F('description')
+        ).values('company_id', 'company_name', 'company_description').first()
+
+        return self.response(self.response_success(company))
+
+    def delete_company(self, request, *args, **kwargs):
+
+        if not request.body:
+            return self.response_exception(code=SERVICE_CODE_NOT_EXISTS_BODY)
+        try:
+            data = self.decode_to_json(request.body)
+        except Exception as ex:
+
+            return self.response_exception(code=SERVICE_CODE_BODY_PARSE_ERROR, mess=str(ex))
+
+        company_id = data.get('company_id', None)
+        if not company_id:
+            return self.validate_exception('Missing company_id')
+
+        company_id = convert_to_int(company_id)
+        if not company_id:
+            return self.validate_exception('Can not convert company_id to int')
+
+        company = Company.objects.filter(id=company_id)
+        if not company:
+            return self.response_exception('Company query does not exist')
+
+        company.delete()
+
+        return self.response(self.response_delete())
